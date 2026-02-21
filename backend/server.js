@@ -1,7 +1,8 @@
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
-const { genai } = require("@google/generative-ai"); // SDK handles token
+const path = require("path")
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
+const { GoogleGenerativeAI } = require("@google/generative-ai"); // SDK handles token
 
 const app = express();
 app.use(cors());
@@ -10,16 +11,16 @@ app.use(express.json());
 app.post("/api/explain", async (req, res) => {
   try {
     const { topic } = req.body;
+    console.log(topic);
 
-    // Using SDK's generateText
-    const response = await genai.generateText({
-      model: "gemini-3-flash-preview",
-      prompt: `Explain ${topic} in simple language for Pakistani students with examples.`,
-      temperature: 0.7,
-      maxOutputTokens: 500,
-    });
 
-    res.json({ result: response.output[0].content[0].text });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+    const response = await model.generateContent(
+      `Explain ${topic} in simple language for Pakistani students with examples.`
+    );
+
+    return res.json({ result: response.response.text() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
