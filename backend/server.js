@@ -1,714 +1,210 @@
 const express = require("express");
 const cors = require("cors");
-const path = require("path")
-require("dotenv").config({ path: path.join(__dirname, "../.env") });
-const { GoogleGenerativeAI } = require("@google/generative-ai"); // SDK handles token
+require("dotenv").config();
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
+
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
+// Check API key
+if (!process.env.GEMINI_API_KEY) {
+  console.error("GEMINI_API_KEY not found in .env file");
+  process.exit(1);
+}
+
+// Initialize Gemini once
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({
+  model: "gemini-3-flash-preview",
+});
+
+// Health Route
+app.get("/", (req, res) => {
+  res.json({ message: "GenLearn AI Backend Running" });
+});
+
+// =============================
+// 🔹 1. Explain Topic
+// =============================
 app.post("/api/explain", async (req, res) => {
   try {
     const { topic } = req.body;
-    console.log(topic);
+    if (!topic) return res.status(400).json({ error: "Topic is required" });
 
+    const prompt = `
+Explain "${topic}" in simple language for Pakistani students.
+Use easy Urdu + English mix.
+Add real-life examples.
+Use headings and bullet points.
+`;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-    const response = await model.generateContent(
-      `Explain ${topic} in simple language for Pakistani students with examples.`
-    );
+    const result = await model.generateContent(prompt);
+    res.json({ result: result.response.text() });
 
-    return res.json({ result: response.response.text() });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.listen(5000, () => console.log("Server running on port 5000"));
+// =============================
+// 🔹 2. Quiz Generator
+// =============================
+app.post("/api/quiz", async (req, res) => {
+  try {
+    const { topic } = req.body;
+    if (!topic) return res.status(400).json({ error: "Topic is required" });
+
+    const prompt = `
+Generate 5 short quiz questions about "${topic}".
+Mix conceptual and practical questions.
+Provide answers at the end.
+`;
+
+    const result = await model.generateContent(prompt);
+    res.json({ result: result.response.text() });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// =============================
+// 🔹 3. MCQ Generator
+// =============================
+app.post("/api/mcq", async (req, res) => {
+  try {
+    const { topic } = req.body;
+    if (!topic) return res.status(400).json({ error: "Topic is required" });
+
+    const prompt = `
+Generate 5 multiple choice questions (MCQs) about "${topic}".
+Each question must have:
+A) option
+B) option
+C) option
+D) option
+Also mention correct answer.
+`;
+
+    const result = await model.generateContent(prompt);
+    res.json({ result: result.response.text() });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// =============================
+// 🔹 4. c
+// =============================
+app.post("/api/roadmap", async (req, res) => {
+  try {
+    const { subject, days } = req.body;
+    if (!subject || !days)
+      return res.status(400).json({ error: "Subject and days required" });
+
+    const prompt = `
+Create a ${days}-day study roadmap for "${subject}".
+Target: Pakistani board students (Matric/Inter).
+Divide topics day-wise.
+Include revision and practice days.
+`;
+
+    const result = await model.generateContent(prompt);
+    res.json({ result: result.response.text() });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// =============================
+// 🔹 5. Summary Generator
+// =============================
+app.post("/api/summary", async (req, res) => {
+  try {
+    const { content } = req.body;
+    if (!content)
+      return res.status(400).json({ error: "Content is required" });
+
+    const prompt = `
+Summarize the following content in short bullet points
+for Pakistani students:
+
+${content}
+`;
+
+    const result = await model.generateContent(prompt);
+    res.json({ result: result.response.text() });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// =============================
+// 🔹 6. Translate API
+// =============================
+app.post("/api/translate", async (req, res) => {
+  try {
+    const { text, language } = req.body;
+    if (!text || !language)
+      return res.status(400).json({ error: "Text and language required" });
+
+    const prompt = `
+Translate the following text into ${language}
+using simple student-friendly language:
+
+${text}
+`;
+
+    const result = await model.generateContent(prompt);
+    res.json({ result: result.response.text() });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// =============================
+// Start Server
+// =============================
+const PORT = 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 
 
 // const express = require("express");
 // const cors = require("cors");
+// const path = require("path")
 // require("dotenv").config();
-// const genai = require("@google/generative-ai"); // correct import
+// const { GoogleGenerativeAI } = require("@google/generative-ai"); // SDK handles token
 
 // const app = express();
 // app.use(cors());
 // app.use(express.json());
 
-// // 🔹 Explain API
 // app.post("/api/explain", async (req, res) => {
 //   try {
 //     const { topic } = req.body;
+//     console.log(topic);
 
-//     const response = await genai.generateText({
-//       apiKey: process.env.GEMINI_API_KEY,
-//       model: "gemini-3-flash-preview",
-//       prompt: `Explain ${topic} in simple language for Pakistani students with examples.`,
-//       temperature: 0.7,
-//       maxOutputTokens: 500,
-//     });
 
-//     res.json({ result: response.output[0].content[0].text });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Quiz API
-// app.post("/api/quiz", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const response = await genai.generateText({
-//       apiKey: process.env.GEMINI_API_KEY,
-//       model: "gemini-3-flash-preview",
-//       prompt: `Generate 5 MCQs with answers about ${topic}.`,
-//       temperature: 0.7,
-//       maxOutputTokens: 500,
-//     });
-
-//     res.json({ result: response.output[0].content[0].text });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Study Plan API
-// app.post("/api/studyplan", async (req, res) => {
-//   try {
-//     const { subject, days } = req.body;
-
-//     const response = await genai.generateText({
-//       apiKey: process.env.GEMINI_API_KEY,
-//       model: "gemini-3-flash-preview",
-//       prompt: `Create a ${days}-day study plan for ${subject} for board exam preparation.`,
-//       temperature: 0.7,
-//       maxOutputTokens: 500,
-//     });
-
-//     res.json({ result: response.output[0].content[0].text });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// app.listen(5000, () => console.log("Server running on port 5000"));
-
-
-
-// const express = require("express");
-// const cors = require("cors");
-// require("dotenv").config();
-// const { genai } = require("@google/generative-ai"); // correct import
-
-// const app = express();
-// app.use(cors());
-// app.use(express.json());
-
-// // 🔹 Explain API
-// app.post("/api/explain", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const response = await genai.models.generateText({
-//       model: "gemini-3-flash-preview",
-//       apiKey: process.env.GEMINI_API_KEY,
-//       prompt: `Explain ${topic} in simple language for Pakistani students with examples.`,
-//       temperature: 0.7,
-//       maxOutputTokens: 500,
-//     });
-
-//     res.json({ result: response.output[0].content[0].text });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Quiz API
-// app.post("/api/quiz", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const response = await genai.models.generateText({
-//       model: "gemini-3-flash-preview",
-//       apiKey: process.env.GEMINI_API_KEY,
-//       prompt: `Generate 5 MCQs with answers about ${topic}.`,
-//       temperature: 0.7,
-//       maxOutputTokens: 500,
-//     });
-
-//     res.json({ result: response.output[0].content[0].text });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Study Plan API
-// app.post("/api/studyplan", async (req, res) => {
-//   try {
-//     const { subject, days } = req.body;
-
-//     const response = await genai.models.generateText({
-//       model: "gemini-3-flash-preview",
-//       apiKey: process.env.GEMINI_API_KEY,
-//       prompt: `Create a ${days}-day study plan for ${subject} for board exam preparation.`,
-//       temperature: 0.7,
-//       maxOutputTokens: 500,
-//     });
-
-//     res.json({ result: response.output[0].content[0].text });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// app.listen(5000, () => console.log("Server running on port 5000"));
-
-
-
-// const express = require("express");
-// const cors = require("cors");
-// require("dotenv").config();
-// const genai = require("@google/generative-ai"); // use as imported object
-
-// const app = express();
-// app.use(cors());
-// app.use(express.json());
-
-// // 🔹 Explain API
-// app.post("/api/explain", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const response = await genai.models.generateContent({
-//       apiKey: process.env.GEMINI_API_KEY,
-//       model: "gemini-3-flash-preview",
-//       contents: `Explain ${topic} in simple language for Pakistani students with examples.`,
-//     });
-
-//     res.json({ result: response[0].content[0].text });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Quiz API
-// app.post("/api/quiz", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const response = await genai.models.generateContent({
-//       apiKey: process.env.GEMINI_API_KEY,
-//       model: "gemini-3-flash-preview",
-//       contents: `Generate 5 MCQs with answers about ${topic}.`,
-//     });
-
-//     res.json({ result: response[0].content[0].text });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Study Plan API
-// app.post("/api/studyplan", async (req, res) => {
-//   try {
-//     const { subject, days } = req.body;
-
-//     const response = await genai.models.generateContent({
-//       apiKey: process.env.GEMINI_API_KEY,
-//       model: "gemini-3-flash-preview",
-//       contents: `Create a ${days}-day study plan for ${subject} for board exam preparation.`,
-//     });
-
-//     res.json({ result: response[0].content[0].text });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// app.listen(5000, () => console.log("Server running on port 5000"));
-
-
-
-// const express = require("express");
-// const cors = require("cors");
-// require("dotenv").config();
-// const { Client } = require("@google/generative-ai"); // current import
-
-// const app = express();
-// app.use(cors());
-// app.use(express.json());
-
-// // Gemini client
-// const client = new Client({
-//   apiKey: process.env.GEMINI_API_KEY,
-// });
-
-// // 🔹 Explain API
-// app.post("/api/explain", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const response = await client.models.generateContent({
-//       model: "gemini-3-flash-preview",
-//       contents: `Explain ${topic} in simple language for Pakistani students with examples.`,
-//     });
-
-//     res.json({ result: response[0].content[0].text });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Quiz API
-// app.post("/api/quiz", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const response = await client.models.generateContent({
-//       model: "gemini-3-flash-preview",
-//       contents: `Generate 5 MCQs with answers about ${topic}.`,
-//     });
-
-//     res.json({ result: response[0].content[0].text });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Study Plan API
-// app.post("/api/studyplan", async (req, res) => {
-//   try {
-//     const { subject, days } = req.body;
-
-//     const response = await client.models.generateContent({
-//       model: "gemini-3-flash-preview",
-//       contents: `Create a ${days}-day study plan for ${subject} for board exam preparation.`,
-//     });
-
-//     res.json({ result: response[0].content[0].text });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// app.listen(5000, () => console.log("Server running on port 5000"));
-
-
-
-// const express = require("express");
-// const cors = require("cors");
-// require("dotenv").config();
-// const { TextGenerationClient } = require("@google/generative-ai");
-
-// const app = express();
-// app.use(cors());
-// app.use(express.json());
-
-// // Gemini Client
-// const client = new TextGenerationClient({
-//   apiKey: process.env.GEMINI_API_KEY,
-// });
-
-// // 🔹 Explain API
-// app.post("/api/explain", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const response = await client.generateText({
-//       model: "gemini-3-flash-preview", // ✅ updated model
-//       prompt: `Explain ${topic} in simple language for Pakistani students with examples.`,
-//       temperature: 0.7,
-//       maxOutputTokens: 500,
-//     });
-
-//     res.json({ result: response.candidates[0].output });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Quiz API
-// app.post("/api/quiz", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const response = await client.generateText({
-//       model: "gemini-3-flash-preview",
-//       prompt: `Generate 5 MCQs with answers about ${topic}.`,
-//       temperature: 0.7,
-//       maxOutputTokens: 500,
-//     });
-
-//     res.json({ result: response.candidates[0].output });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Study Plan API
-// app.post("/api/studyplan", async (req, res) => {
-//   try {
-//     const { subject, days } = req.body;
-
-//     const response = await client.generateText({
-//       model: "gemini-3-flash-preview",
-//       prompt: `Create a ${days}-day study plan for ${subject} for board exam preparation.`,
-//       temperature: 0.7,
-//       maxOutputTokens: 500,
-//     });
-
-//     res.json({ result: response.candidates[0].output });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// app.listen(5000, () => console.log("Server running on port 5000"));
-
-
-
-// const express = require("express");
-// const cors = require("cors");
-// require("dotenv").config();
-// const { TextGenerationClient } = require("@google/generative-ai");
-
-// const app = express();
-// app.use(cors());
-// app.use(express.json());
-
-// // Use Gemini TextGenerationClient
-// const client = new TextGenerationClient({
-//   apiKey: process.env.GEMINI_API_KEY,
-// });
-
-// // Explain API
-// app.post("/api/explain", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const response = await client.generateText({
-//       model: "text-bison-001", // latest working model
-//       prompt: `Explain ${topic} in simple language for Pakistani students with examples.`,
-//       temperature: 0.7,
-//       maxOutputTokens: 500,
-//     });
-
-//     res.json({ result: response.candidates[0].output });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // Quiz API
-// app.post("/api/quiz", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const response = await client.generateText({
-//       model: "text-bison-001",
-//       prompt: `Generate 5 MCQs with answers about ${topic}.`,
-//       temperature: 0.7,
-//       maxOutputTokens: 500,
-//     });
-
-//     res.json({ result: response.candidates[0].output });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // Study Plan API
-// app.post("/api/studyplan", async (req, res) => {
-//   try {
-//     const { subject, days } = req.body;
-
-//     const response = await client.generateText({
-//       model: "text-bison-001",
-//       prompt: `Create a ${days}-day study plan for ${subject} for board exam preparation.`,
-//       temperature: 0.7,
-//       maxOutputTokens: 500,
-//     });
-
-//     res.json({ result: response.candidates[0].output });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// app.listen(5000, () => console.log("Server running on port 5000"));
-
-
-
-// const express = require("express");
-// const cors = require("cors");
-// require("dotenv").config();
-// const { GoogleGenerativeAI } = require("@google/generative-ai");
-
-// const app = express();
-// app.use(cors());
-// app.use(express.json());
-
-// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// const model = genAI.getGenerativeModel({ model: "text-bison-001" }); // ✅ working model
-
-// // 🔹 Explain Feature
-// app.post("/api/explain", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const result = await model.generateContent(
+//     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+//     const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+//     const response = await model.generateContent(
 //       `Explain ${topic} in simple language for Pakistani students with examples.`
 //     );
 
-//     res.json({ result: result.response.text() });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
+//     return res.json({ result: response.response.text() });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
 //   }
-// });
-
-// // 🔹 Quiz Feature
-// app.post("/api/quiz", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const result = await model.generateContent(
-//       `Generate 5 MCQs with answers about ${topic}.`
-//     );
-
-//     res.json({ result: result.response.text() });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Study Plan Feature
-// app.post("/api/studyplan", async (req, res) => {
-//   try {
-//     const { subject, days } = req.body;
-
-//     const result = await model.generateContent(
-//       `Create a ${days}-day study plan for ${subject} for board exam preparation.`
-//     );
-
-//     res.json({ result: result.response.text() });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// app.listen(5000, () => console.log("Server running on port 5000"));
-
-
-
-// const express = require("express");
-// const cors = require("cors");
-// require("dotenv").config();
-// const { GoogleGenerativeAI } = require("@google/generative-ai");
-
-// const app = express();
-// app.use(cors());
-// app.use(express.json());
-
-// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-// // 🔹 Explain Feature
-// app.post("/api/explain", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const result = await model.generateContent(
-//       `Explain ${topic} in simple language for Pakistani students with examples.`
-//     );
-
-//     res.json({ result: result.response.text() });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Quiz Feature
-// app.post("/api/quiz", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const result = await model.generateContent(
-//       `Generate 5 MCQs with answers about ${topic}.`
-//     );
-
-//     res.json({ result: result.response.text() });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Study Plan Feature
-// app.post("/api/studyplan", async (req, res) => {
-//   try {
-//     const { subject, days } = req.body;
-
-//     const result = await model.generateContent(
-//       `Create a ${days}-day study plan for ${subject} for board exam preparation.`
-//     );
-
-//     res.json({ result: result.response.text() });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// app.listen(5000, () => console.log("Server running on port 5000"));
-
-
-
-// const express = require("express");
-// const cors = require("cors");
-// require("dotenv").config();
-// const OpenAI = require("openai");
-
-// const app = express();
-// app.use(cors());
-// app.use(express.json());
-
-// const openai = new OpenAI({
-//   apiKey: process.env.OPENAI_API_KEY,
-// });
-
-// // 🔹 Explain Feature
-// app.post("/api/explain", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const response = await openai.chat.completions.create({
-//       model: "gpt-4o-mini",
-//       messages: [
-//         {
-//           role: "user",
-//           content: `Explain ${topic} in simple language for Pakistani students with examples.`,
-//         },
-//       ],
-//     });
-
-//     res.json({ result: response.choices[0].message.content });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Quiz Feature
-// app.post("/api/quiz", async (req, res) => {
-//   try {
-//     const { topic } = req.body;
-
-//     const response = await openai.chat.completions.create({
-//       model: "gpt-4o-mini",
-//       messages: [
-//         {
-//           role: "user",
-//           content: `Generate 5 MCQs with answers about ${topic}.`,
-//         },
-//       ],
-//     });
-
-//     res.json({ result: response.choices[0].message.content });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // 🔹 Study Plan Feature
-// app.post("/api/studyplan", async (req, res) => {
-//   try {
-//     const { subject, days } = req.body;
-
-//     const response = await openai.chat.completions.create({
-//       model: "gpt-4o-mini",
-//       messages: [
-//         {
-//           role: "user",
-//           content: `Create a ${days}-day study plan for ${subject} for board exam preparation.`,
-//         },
-//       ],
-//     });
-
-//     res.json({ result: response.choices[0].message.content });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// app.listen(5000, () => {
-//   console.log("Server running on port 5000");
-// });
-
-
-
-// import express from "express";
-// import cors from "cors";
-// import dotenv from "dotenv";
-// import OpenAI from "openai";
-
-// dotenv.config();
-
-// const app = express();
-// app.use(cors());
-// app.use(express.json());
-
-// const openai = new OpenAI({
-//   apiKey: process.env.OPENAI_API_KEY,
-// });
-
-// app.post("/api/explain", async (req, res) => {
-//   const { topic } = req.body;
-
-//   const response = await openai.chat.completions.create({
-//     model: "gpt-4o-mini",
-//     messages: [
-//       {
-//         role: "user",
-//         content: `Explain ${topic} in simple language for Pakistani students with examples.`,
-//       },
-//     ],
-//   });
-
-//   res.json({ result: response.choices[0].message.content });
-// });
-
-// app.post("/api/quiz", async (req, res) => {
-//   const { topic } = req.body;
-
-//   const response = await openai.chat.completions.create({
-//     model: "gpt-4o-mini",
-//     messages: [
-//       {
-//         role: "user",
-//         content: `Generate 5 MCQs with answers about ${topic}.`,
-//       },
-//     ],
-//   });
-
-//   res.json({ result: response.choices[0].message.content });
-// });
-
-// app.post("/api/studyplan", async (req, res) => {
-//   const { subject, days } = req.body;
-
-//   const response = await openai.chat.completions.create({
-//     model: "gpt-4o-mini",
-//     messages: [
-//       {
-//         role: "user",
-//         content: `Create a ${days}-day study plan for ${subject} for board exam preparation.`,
-//       },
-//     ],
-//   });
-
-//   res.json({ result: response.choices[0].message.content });
 // });
 
 // app.listen(5000, () => console.log("Server running on port 5000"));
