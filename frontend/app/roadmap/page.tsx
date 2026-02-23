@@ -11,6 +11,7 @@ export default function RoadmapPage() {
         label="Learning Roadmap"
         apiEndpoint="roadmap"
         fields={[
+            // { name: "subject", placeholder: "Enter subject", type: "text" },
             { name: "subject", placeholder: "Enter subject" },
             { name: "days", placeholder: "Number of days", type: "number" }
         ]}

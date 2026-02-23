@@ -37,7 +37,7 @@ const ApiForm: React.FC<ApiFormProps> = ({
     setResult("");
 
     try {
-      const res = await fetch(`/api-proxy?endpoint=${apiEndpoint}`, {
+      const res = await fetch(`/api/${apiEndpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
